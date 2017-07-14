@@ -1,0 +1,5 @@
+Pygments==2.2.0
+redis==2.10.5
+six==1.10.0
+tornado==4.5.1
+WTForms==2.1
