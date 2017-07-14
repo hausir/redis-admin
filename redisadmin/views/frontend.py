@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 """
     views: frontend.py
     ~~~~~~~~~~~
@@ -20,14 +20,14 @@ class Index(RequestHandler):
     @tornado.web.authenticated
     def get(self):
         self.render('index.html')
-        return 
+        return
 
 
 @route("/connection", name='connection')
 class Connection(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        db  = self.get_args('db', 0, type=int)
+        db = self.get_args('db', 0, _type=int)
 
         self.session['db'] = db
         self.session.save()
@@ -40,36 +40,41 @@ class Connection(RequestHandler):
 class Menu(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        q = self.get_args('q','*')
-        
-        fullkeys = self.redis.keys(q)
+        q = self.get_args('q', '*')
+
+        fullkeys = [key for key in self.redis.keys(q)]
 
         def get_item(key, root):
-            id = '%s:%s' % (root, key) if root else key
-            children = get_children(id)
-            item = {"text": '%s(%s)' % (id, len(children)) if children else id,
-                    "id": id,
-                    "children": sorted(children)[:200]
-                    }
+            _id = '%s:%s' % (root, key) if root else key
+            _children = get_children(_id)
+
+            item = {
+                "text": '%s(%s)' % (_id, len(_children)) if _children else _id,
+                "id": _id,
+                "children": sorted(_children, key=lambda x: x.get('id'))[:200]
+            }
             return item
 
         def get_children(root=None):
             if root:
-                keys = set(sorted([key[len(root)+1:].split(':')[0] for key in fullkeys if key[:len(root)+1]=='%s:' % root]))
+                keys = set(
+                    sorted(
+                        [key[len(root) + 1:].split(':')[0] for key in fullkeys if key[:len(root) + 1] == '%s:' % root]
+                    )
+                )
             else:
                 keys = set(sorted([key.split(':')[0] for key in fullkeys]))
 
             return [get_item(key, root) for key in keys]
-        
 
         children = get_children()
-        while len(children)==1 and children[0]['children']:
+        while len(children) == 1 and children[0]['children']:
             children = children[0]['children']
 
         menu = [{"text": '%s(%s)' % (q, len(children)), "id": q, "children": children}]
-        
+
         self.write(json.dumps(menu))
-        return 
+        return
 
 
 @route("/new", name='new')
@@ -86,10 +91,10 @@ class New(RequestHandler):
                 self.write(dict(success=False, error=u"Key is exists!"))
                 return
 
-            if _type=='string':
+            if _type == 'string':
                 self.redis.set(key, value)
 
-            elif _type=='hash':
+            elif _type == 'hash':
                 try:
                     value = json.loads(value)
                 except:
@@ -97,13 +102,13 @@ class New(RequestHandler):
                     return
                 else:
                     if isinstance(value, dict):
-                        for field,v in value.items():
+                        for field, v in value.items():
                             self.redis.hset(key, field, str(v))
                     else:
                         self.error()
                         return
 
-            elif _type=='list':
+            elif _type == 'list':
                 try:
                     value = json.loads(value)
                 except:
@@ -117,7 +122,7 @@ class New(RequestHandler):
                         self.error()
                         return
 
-            elif _type=='set':
+            elif _type == 'set':
                 try:
                     value = json.loads(value)
                 except:
@@ -131,9 +136,9 @@ class New(RequestHandler):
                         self.error()
                         return
 
-            elif _type=='zset':
+            elif _type == 'zset':
                 score = self.get_args('score')
-                if score: 
+                if score:
                     self.redis.zadd(key, score, value)
                 else:
                     self.error()
@@ -144,7 +149,7 @@ class New(RequestHandler):
 
         self.error()
         return
-        
+
     def error(self):
         self.write(dict(success=False, error="New key create failed, check form and value is valid."))
         return
@@ -154,40 +159,40 @@ class New(RequestHandler):
 class Value(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        key = self.get_args('key','')
+        key = self.get_args('key', '')
         if key:
             _type = self.redis.type(key)
-            if _type=='string':
+            if _type == 'string':
                 value = self.get_strings(key)
-            elif _type=='list':
+            elif _type == 'list':
                 value = self.get_lists(key)
-            elif _type=='hash':
+            elif _type == 'hash':
                 value = self.get_hashes(key)
-            elif _type=='set':
+            elif _type == 'set':
                 value = self.get_sets(key)
-            elif _type=='zset':
+            elif _type == 'zset':
                 value = self.get_sortedsets(key)
             else:
                 _type = value = None
-            
-            self.write(dict(type=_type,key=key,value=value))
+            print(value)
+            self.write(dict(type=_type, key=key, value=value))
             return
 
-        self.write(dict(type=None,key=key,value=None))
+        self.write(dict(type=None, key=key, value=None))
         return
-    
+
     def get_strings(self, key):
         return self.redis.get(key)
-    
+
     def get_hashes(self, key):
         return self.redis.hgetall(key)
 
     def get_lists(self, key):
         return self.redis.lrange(key, 0, -1)
-    
+
     def get_sets(self, key):
         return list(self.redis.smembers(key))
-    
+
     def get_sortedsets(self, key):
         return list(self.redis.zrange(key, 0, -1))
 
@@ -196,26 +201,26 @@ class Value(RequestHandler):
 class List(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        root = self.get_args('root','')
+        root = self.get_args('root', '')
         if root:
-            
-            while (root and root[-1] in [':','*']):
+
+            while (root and root[-1] in [':', '*']):
                 root = root[:-1]
 
-            page = self.get_args('page', 1, type=int)
+            page = self.get_args('page', 1, _type=int)
             if page < 1: page = 1
 
             per_page = self.settings['per_page']
 
-            fullkeys = sorted(self.redis.keys(root+':*'))
+            fullkeys = sorted(self.redis.keys(root + ':*'))
 
-            data = [(key, self.redis.hgetall(key) if self.redis.type(key)=='hash' else {}) \
-                        for key in fullkeys if key.split(root)[-1].count(':')==1]
+            data = [(key, self.redis.hgetall(key) if self.redis.type(key) == 'hash' else {}) \
+                    for key in fullkeys if key.split(root)[-1].count(':') == 1]
 
             page_obj = Pagination(data, page, per_page=per_page)
-            
+
             iter_pages = [p for p in page_obj.iter_pages()]
-            
+
             self.write(dict(data=page_obj.items, root=root, page=page, iter_pages=iter_pages))
             return
 
@@ -228,8 +233,8 @@ class Info(RequestHandler):
     @tornado.web.authenticated
     def get(self):
         info = self.redis.info()
-        self.write(json.dumps(info.items()))
-        return 
+        self.write(json.dumps(list(info.items())))
+        return
 
 
 @route("/flush/db", name="flush_db")
@@ -238,7 +243,7 @@ class FlushDB(RequestHandler):
     def get(self):
         result = self.redis.flushdb()
         self.write(dict(success=result))
-        return 
+        return
 
 
 @route("/flush/all", name="flush_all")
@@ -247,26 +252,24 @@ class FlushDB(RequestHandler):
     def get(self):
         result = self.redis.flushall()
         self.write(dict(success=result))
-        return 
+        return
 
 
 @route("/expire", name="expire")
 class Expire(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-
         key = self.get_args('key', '')
-        seconds = self.get_args('seconds', 0, type=int)
+        seconds = self.get_args('seconds', 0, _type=int)
 
         if key:
-
             result = self.redis.expire(key, seconds)
 
             self.write(dict(success=result))
-            return 
+            return
 
         self.write(dict(success=False))
-        return 
+        return
 
 
 @route("/move", name="move")
@@ -275,35 +278,35 @@ class Move(RequestHandler):
     def get(self):
 
         key = self.get_args('key', '')
-        db = self.get_args('db', -1, type=int)
+        db = self.get_args('db', -1, _type=int)
 
-        if key and db>=0:
+        if key and db >= 0:
             try:
                 result = self.redis.move(key, db)
             except:
                 result = False
 
             self.write(dict(success=result))
-            return 
+            return
 
         self.write(dict(success=False))
-        return 
+        return
 
 
 @route("/edit", name="edit")
 class Edit(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-    
+
         key = self.get_args('key', '')
         index = self.get_args('index', '')
         field = self.get_args('field', '')
         value = self.get_args('value', '')
 
         if key:
-    
+
             if self.redis.exists(key):
-                
+
                 _type = self.redis.type(key)
 
                 if _type == 'string':
@@ -325,7 +328,7 @@ class Edit(RequestHandler):
 
         self.write(dict(success=False))
         return
-    
+
     def edit_strings(self, key, value):
         return self.redis.set(key, value)
 
@@ -354,20 +357,20 @@ class Edit(RequestHandler):
 class Add(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-    
+
         key = self.get_args('key', '')
         value = self.get_args('value', '')
 
         if key:
-    
+
             if self.redis.exists(key):
-                
+
                 _type = self.redis.type(key)
 
                 if _type == 'string':
                     result = self.add_strings(key, value)
                 elif _type == 'list':
-                    pos = self.get_args('pos','r')
+                    pos = self.get_args('pos', 'r')
                     result = self.add_lists(key, value, pos)
                 elif _type == 'hash':
                     field = self.get_args('field', '')
@@ -375,7 +378,7 @@ class Add(RequestHandler):
                 elif _type == 'set':
                     result = self.add_sets(key, value)
                 elif _type == 'zset':
-                    score = self.get_args('score','')
+                    score = self.get_args('score', '')
                     result = self.add_sortedsets(key, score, value) if score else False
                 else:
                     logging.error('Unexpected key type by %s' % key)
@@ -386,18 +389,18 @@ class Add(RequestHandler):
 
         self.write(dict(success=False))
         return
-    
+
     def add_strings(self, key, value):
         """ return a length with key """
         return self.redis.append(key, value)
-        
+
     def add_lists(self, key, value, pos):
         """ return a index with key """
-        if pos=='r':
+        if pos == 'r':
             return self.redis.rpush(key, value)
         else:
             return self.redis.lpush(key, value)
-        
+
     def add_hashs(self, key, field, value):
         """ return a changed lines with key """
         return self.redis.hset(key, field, value)
@@ -405,7 +408,7 @@ class Add(RequestHandler):
     def add_sets(self, key, member):
         """ return a changed lines with key """
         return self.redis.sadd(key, member)
-        
+
     def add_sortedsets(self, key, score, member):
         """ return a changed lines with key """
         return self.redis.zadd(key, score, member)
@@ -415,12 +418,12 @@ class Add(RequestHandler):
 class Remove(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        
+
         key = self.get_args('key', '')
         field = self.get_args('field', '')
-        
+
         if key:
-    
+
             if self.redis.exists(key):
 
                 _type = self.redis.type(key)
@@ -446,18 +449,18 @@ class Remove(RequestHandler):
 class Pop(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-        
+
         key = self.get_args('key', '')
         pos = self.get_args('pos', 'l')
-        
+
         if key:
-    
+
             if self.redis.exists(key):
 
                 _type = self.redis.type(key)
 
                 if _type == 'list':
-                    if pos=='r':
+                    if pos == 'r':
                         result = self.redis.rpop(key)
                     else:
                         result = self.redis.lpop(key)
@@ -476,16 +479,15 @@ class Pop(RequestHandler):
 class Delete(RequestHandler):
     @tornado.web.authenticated
     def get(self):
-
         key = self.get_args('key', '')
         if key:
             result = self.redis.delete(key)
 
             self.write(dict(success=result))
-            return 
-        
+            return
+
         self.write(dict(success=False))
-        return 
+        return
 
 
 @route("/login", name='login')
@@ -493,35 +495,32 @@ class Login(RequestHandler):
     def get(self):
         form = self.forms.LoginForm()
         self.render('login.html', form=form)
-        return 
-     
+        return
+
     def post(self):
         form = self.forms.LoginForm(self.request.arguments)
-    
+
         if form.validate():
-            if self.settings['username']==form.username.data and \
-                    self.settings['password']==form.password.data:
+            if self.settings['username'] == form.username.data and \
+                            self.settings['password'] == form.password.data:
 
                 self.session['user'] = {'username': self.settings['username']}
                 self.session.save()
-                
+
                 self.redirect(self.reverse_url('index'))
                 return
             else:
                 form.submit.errors.append(self._("The username or password you provided are incorrect."))
 
         self.render('login.html', form=form)
-        return 
+        return
 
 
 @route("/logout", name='logout')
 class Logout(RequestHandler):
     def get(self):
-
         del self.session['user']
         self.session.save()
 
         self.redirect(self.reverse_url('index'))
         return
-
-

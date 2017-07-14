@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 """
     extensions: permission.py
     permission for tornado. from flask-principal.
@@ -55,6 +55,7 @@ class Identity(object):
         identity = Identity('ali')
         identity.provides.add(('role', 'admin'))
     """
+
     def __init__(self, name):
         self.name = name
         self.provides = set()
@@ -67,6 +68,7 @@ class AnonymousIdentity(Identity):
     """An anonymous identity
     :attr name: "anonymous"
     """
+
     def __init__(self):
         Identity.__init__(self, 'anonymous')
 
@@ -104,8 +106,9 @@ class IdentityContext(object):
                 exc = sys.exc_info()
             self.__exit__(*exc)
             return result
+
         return wrapper
-    
+
     def __enter__(self):
         # check the permission here
         if not self.can():
@@ -116,7 +119,7 @@ class IdentityContext(object):
     def __exit__(self, *exc):
         if exc != (None, None, None):
             cls, val, tb = exc
-            raise cls, val, tb
+            raise cls(val, tb)
         return False
 
 
@@ -125,6 +128,7 @@ class Permission(object):
     Represents needs, any of which must be present to access a resource
     :param needs: The needs for this permission
     """
+
     def __init__(self, *needs):
         self.needs = set(needs)
         self.excludes = set()
@@ -133,7 +137,7 @@ class Permission(object):
         """Does the same thing as "self.union(other)"
         """
         return self.union(other)
-    
+
     def __or__(self, other):
         """Does the same thing as "self.difference(other)"
         """
@@ -143,14 +147,14 @@ class Permission(object):
         """Does the same thing as "other.issubset(self)".
         """
         return other.issubset(self)
-    
+
     def require(self, http_exception=None, identity=None):
         return IdentityContext(self, http_exception, identity)
-        
+
     def test(self, identity, http_exception=None):
         with self.require(http_exception, identity):
             pass
-        
+
     def reverse(self):
         """
         Returns reverse of current state (needs->excludes, excludes->needs) 
@@ -200,7 +204,7 @@ class Permission(object):
             return False
 
         return True
-    
+
     def can(self, identity):
         """Whether the required context for this permission has access
 

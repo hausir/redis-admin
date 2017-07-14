@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 """
     extensions.session
     ~~~~~~~~
     :origin version in https://gist.github.com/1735032
 """
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+
+import json
 import time
 import logging
 from uuid import uuid4
@@ -22,42 +20,42 @@ class Session(object):
         self._expiry = expires_days
         self._dirty = False
         self.get_data()
-    
+
     def get_data(self):
         value = self.get_session(self.name)
-        self._data = pickle.loads(value) if value else {}
+        self._data = json.loads(value) if value else {}
 
     def set_expires(self, days):
         self._expiry = days
 
     def __getitem__(self, key):
         return self._data[key]
-    
+
     def __setitem__(self, key, value):
         self._data[key] = value
         self._dirty = True
-    
+
     def __delitem__(self, key):
         if key in self._data:
             del self._data[key]
             self._dirty = True
-        
+
     def __contains__(self, key):
         return key in self._data
-    
+
     def __len__(self):
         return len(self._data)
-    
+
     def __iter__(self):
         for key in self._data:
             yield key
-    
+
     def __del__(self):
         self.save()
 
     def save(self):
         if self._dirty:
-            self.set_session(self.name, pickle.dumps(self._data), expires_days=self._expiry)
+            self.set_session(self.name, json.dumps(self._data), expires_days=self._expiry)
             self._dirty = False
 
 
@@ -74,15 +72,15 @@ class RedisSessionStore(object):
         return '%s:%s' % (self.options['key_prefix'], sid)
 
     def generate_sid(self):
-        return uuid4().get_hex()
+        return uuid4().hex
 
     def get_session(self, sid, name):
         data = self.redis.hget(self.prefixed(sid), name)
-        session = pickle.loads(data) if data else dict()
+        session = json.loads(data) if data else dict()
         return session
 
     def set_session(self, sid, session_data, name, expiry=None):
-        self.redis.hset(self.prefixed(sid), name, pickle.dumps(session_data))
+        self.redis.hset(self.prefixed(sid), name, json.dumps(session_data))
         expiry = expiry or self.options['expire']
         if expiry:
             self.redis.expire(self.prefixed(sid), expiry)
@@ -109,17 +107,17 @@ class RedisSession(object):
     @property
     def id(self):
         return self._sid
-    
+
     def access(self, remote_ip):
-        access_info = {'remote_ip':remote_ip, 'time':'%.6f' % time.time()}
+        access_info = {'remote_ip': remote_ip, 'time': '%.6f' % time.time()}
         self._store.set_session(
-                self._sid,
-                'last_access',
-                pickle.dumps(access_info))
+            self._sid,
+            'last_access',
+            json.dumps(access_info))
 
     def last_access(self):
         access_info = self._store.get_session(self._sid, 'last_access')
-        return pickle.loads(access_info)
+        return json.loads(access_info)
 
     def set_expires(self, days):
         self._expiry = days * 86400 if days else None
@@ -155,4 +153,3 @@ class RedisSession(object):
         if self._dirty:
             self._store.set_session(self._sid, self._data, 'data', self._expiry)
             self._dirty = False
-

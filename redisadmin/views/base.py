@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 """
     views: base.py
     ~~~~~~~~~~~
@@ -43,21 +43,22 @@ class FlashMessageMixIn(object):
         </div>
         {% end %}
     """
+
     def flash(self, message, category='message'):
         messages = self.messages()
         messages.append((category, message))
         self.set_secure_cookie('flash_messages', tornado.escape.json_encode(messages))
-    
+
     def messages(self):
         messages = self.get_secure_cookie('flash_messages')
         messages = tornado.escape.json_decode(messages) if messages else []
         return messages
-        
+
     def get_flashed_messages(self):
         messages = self.messages()
         self.clear_cookie('flash_messages')
         return messages
-    
+
 
 class PermissionMixIn(object):
     @property
@@ -88,7 +89,7 @@ class CachedItemsMixIn(object):
         elif name == 'tags':
             items = Tag.query.cloud()
         elif name == 'links':
-            items = [link.item for link in Link.query.filter(Link.passed==True).limit(limit)]
+            items = [link.item for link in Link.query.filter(Link.passed == True).limit(limit)]
         cache.set(name, items)
         return items
 
@@ -97,11 +98,11 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
     def initialize(self):
         db = self.session['db'] if 'db' in self.session else 0
         self.redis = self.application.redis[db]
-    
+
     def get_current_user(self):
         user = self.session['user'] if 'user' in self.session else None
         return user
-    
+
     @property
     def session(self):
         if hasattr(self, '_session'):
@@ -110,18 +111,18 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
             self.require_setting('permanent_session_lifetime', 'session')
             expires = self.settings['permanent_session_lifetime'] or None
             if 'redis_server' in self.settings and self.settings['redis_server']:
-                sessionid = self.get_secure_cookie('sid')
+                sessionid = self.get_secure_cookie('sid').decode('utf-8')
                 self._session = RedisSession(self.application.session_store, sessionid, expires_days=expires)
-                if not sessionid: 
+                if not sessionid:
                     self.set_secure_cookie('sid', self._session.id, expires_days=expires)
             else:
                 self._session = Session(self.get_secure_cookie, self.set_secure_cookie, expires_days=expires)
             return self._session
-    
+
     def get_user_locale(self):
         code = self.get_cookie('lang', self.settings.get('default_locale', 'zh_CN'))
         return tornado.locale.get(code)
-    
+
     def get_error_html(self, status_code, **kwargs):
         if self.settings.get('debug', False) is False:
             self.set_status(status_code)
@@ -132,40 +133,42 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
                 if fp.endswith('.html'):
                     fp = os.path.join(self.get_template_path(), fp)
 
-                half_lines = (num_lines/2)
+                half_lines = (num_lines / 2)
                 try:
                     with open(fp) as f:
                         all_lines = [line for line in f]
-                        code = ''.join(all_lines[target_line-half_lines-1:target_line+half_lines])
-                        formatter = HtmlFormatter(linenos=True, linenostart=target_line-half_lines, hl_lines=[half_lines+1])
-                        lexer = get_lexer_for_filename(fp) 
+                        code = ''.join(all_lines[target_line - half_lines - 1:target_line + half_lines])
+                        formatter = HtmlFormatter(linenos=True, linenostart=target_line - half_lines,
+                                                  hl_lines=[half_lines + 1])
+                        lexer = get_lexer_for_filename(fp)
                         return highlight(code, lexer, formatter)
-                
-                except Exception, ex:
+
+                except Exception as ex:
                     logging.error(ex)
                     return ''
 
             css = HtmlFormatter().get_style_defs('.highlight')
             exception = kwargs.get('exception', None)
-            return self.render_string('errors/exception.htm', 
+            return self.render_string('errors/exception.htm',
                                       get_snippet=get_snippet,
                                       css=css,
                                       exception=exception,
-                                      status_code=status_code, 
+                                      status_code=status_code,
                                       kwargs=kwargs)
-    
-    def get_args(self, key, default=None, type=None):
-        if type==list:
-            if default is None: default = []
+
+    def get_args(self, key, default=None, _type=None):
+        if _type == list:
+            if default is None:
+                default = []
             return self.get_arguments(key, default)
         value = self.get_argument(key, default)
-        if value and type:
+        if value and _type:
             try:
-                value = type(value)
+                value = _type(value)
             except ValueError:
                 value = default
         return value
-    
+
     @property
     def is_xhr(self):
         '''True if the request was triggered via a JavaScript XMLHttpRequest.
@@ -173,8 +176,8 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
         header and set it to "XMLHttpRequest".  Libraries that do that are
         prototype, jQuery and Mochikit and probably some more.'''
         return self.request.headers.get('X-Requested-With', '') \
-                           .lower() == 'xmlhttprequest'
-    
+                   .lower() == 'xmlhttprequest'
+
     @property
     def forms(self):
         return self.application.forms[self.locale.code]
@@ -182,13 +185,12 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
     def _(self, message, plural_message=None, count=None):
         return self.locale.translate(message, plural_message, count)
 
- 
+
 class ErrorHandler(RequestHandler):
     """raise 404 error if url is not found.
     fixed tornado.web.RequestHandler HTTPError bug.
     """
+
     def prepare(self):
         self.set_status(404)
         raise tornado.web.HTTPError(404)
-
-
