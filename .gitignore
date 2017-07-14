@@ -7,3 +7,6 @@
 *.db
 *.sw[po]
 local*
+
+venv
+
