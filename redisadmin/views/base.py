@@ -95,6 +95,9 @@ class CachedItemsMixIn(object):
 
 
 class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMixIn, CachedItemsMixIn):
+    def data_received(self, chunk):
+        pass
+
     def initialize(self):
         db = self.session['db'] if 'db' in self.session else 0
         self.redis = self.application.redis[db]
