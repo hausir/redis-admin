@@ -36,8 +36,8 @@ class Application(tornado.web.Application):
         ))
 
         if 'default_locale' in settings:
-            tornado.locale.load_gettext_translations(
-                os.path.join(os.path.dirname(__file__), 'translations'), 'messages')
+            path = os.path.join(os.path.dirname(__file__), 'translations')
+            tornado.locale.load_translations(path)
 
         tornado.web.Application.__init__(self, handlers, **settings)
 

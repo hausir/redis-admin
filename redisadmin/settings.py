@@ -13,7 +13,7 @@ PASSWORD = '111'
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates')
 STATIC_PATH = os.path.join(os.path.dirname(__file__), 'static')
 
-DEFAULT_LOCALE = 'en_US' #'zh_CN'
+DEFAULT_LOCALE = 'zh_CN'
 
 REDIS_SERVER = True
 REDIS_DB = 16
