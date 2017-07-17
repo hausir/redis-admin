@@ -20,6 +20,8 @@ from redisadmin.extensions.sessions import RedisSession, Session
 
 
 class RequestHandler(tornado.web.RequestHandler):
+    title = 'Welcome'
+
     def data_received(self, chunk):
         pass
 
@@ -131,42 +133,6 @@ class RequestHandler(tornado.web.RequestHandler):
 
     def _(self, message, plural_message=None, count=None):
         return self.locale.translate(message, plural_message, count)
-
-    def flash(self, message, category='message'):
-        """
-        Store a message between requests which the user needs to see.
-
-        views
-        -------
-
-        self.flash("Welcome back, %s" % username, 'success')
-
-        base.html
-        ------------
-
-        {% set messages = handler.get_flashed_messages() %}
-        {% if messages %}
-        <div id="flashed">
-            {% for category, msg in messages %}
-            <span class="flash-{{ category }}">{{ msg }}</span>
-            {% end %}
-        </div>
-        {% end %}
-        """
-
-        messages = self.messages()
-        messages.append((category, message))
-        self.set_secure_cookie('flash_messages', tornado.escape.json_encode(messages))
-
-    def messages(self):
-        messages = self.get_secure_cookie('flash_messages')
-        messages = tornado.escape.json_decode(messages) if messages else []
-        return messages
-
-    def get_flashed_messages(self):
-        messages = self.messages()
-        self.clear_cookie('flash_messages')
-        return messages
 
 
 class ErrorHandler(RequestHandler):

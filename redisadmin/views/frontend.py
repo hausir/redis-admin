@@ -19,6 +19,7 @@ from redisadmin.extensions.routing import route
 class Index(RequestHandler):
     @tornado.web.authenticated
     def get(self):
+        self.title = self._('Redis web manager by tornado')
         self.render('index.html')
         return
 
@@ -493,6 +494,7 @@ class Delete(RequestHandler):
 @route("/login", name='login')
 class Login(RequestHandler):
     def get(self):
+        self.title = self._("Login")
         form = self.forms.LoginForm()
         self.render('login.html', form=form)
 
