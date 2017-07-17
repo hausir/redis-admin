@@ -1,5 +1,10 @@
-#!/usr/bin/env python
-#coding=utf-8
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import os
 
 DEBUG = True
@@ -20,13 +25,6 @@ REDIS_DB = 16
 
 # If set to None or 0 the session will be deleted when the user closes the browser.
 # If set number the session lives for value days.
-PERMANENT_SESSION_LIFETIME = 1 # days
+PERMANENT_SESSION_LIFETIME = 1
 
 PER_PAGE = 100
-
-try:
-    from local_settings import *
-except:
-    pass
-
-
