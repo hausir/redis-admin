@@ -113,8 +113,11 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
         else:
             self.require_setting('permanent_session_lifetime', 'session')
             expires = self.settings['permanent_session_lifetime'] or None
+
             if 'redis_server' in self.settings and self.settings['redis_server']:
-                sessionid = self.get_secure_cookie('sid').decode('utf-8')
+                sessionid = self.get_secure_cookie('sid')
+                if isinstance(sessionid, bytes):
+                    sessionid = sessionid.decode()
                 self._session = RedisSession(self.application.session_store, sessionid, expires_days=expires)
                 if not sessionid:
                     self.set_secure_cookie('sid', self._session.id, expires_days=expires)
