@@ -495,7 +495,6 @@ class Login(RequestHandler):
     def get(self):
         form = self.forms.LoginForm()
         self.render('login.html', form=form)
-        return
 
     def post(self):
         form = self.forms.LoginForm(self.request.arguments)
@@ -507,13 +506,11 @@ class Login(RequestHandler):
                 self.session['user'] = {'username': self.settings['username']}
                 self.session.save()
 
-                self.redirect(self.reverse_url('index'))
-                return
+                return self.redirect(self.reverse_url('index'))
             else:
                 form.submit.errors.append(self._("The username or password you provided are incorrect."))
 
         self.render('login.html', form=form)
-        return
 
 
 @route("/logout", name='logout')
@@ -523,4 +520,3 @@ class Logout(RequestHandler):
         self.session.save()
 
         self.redirect(self.reverse_url('index'))
-        return
