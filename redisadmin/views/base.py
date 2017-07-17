@@ -1,12 +1,11 @@
-#!/usr/bin/env python
-# coding=utf-8
-"""
-    views: base.py
-    ~~~~~~~~~~~
-    :author: laoqiu.com@gmail.com
-"""
-import os
+# -*- coding: utf-8 -*-
 
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import os
 import logging
 import tornado.web
 import tornado.locale
@@ -15,52 +14,19 @@ import tornado.ioloop
 
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
-from pygments.formatters import HtmlFormatter
-
+from pygments.formatters.html import HtmlFormatter
 from redisadmin.extensions.permission import Identity, AnonymousIdentity
-from redisadmin.extensions.cache import cache
 from redisadmin.extensions.sessions import RedisSession, Session
 
 
-class FlashMessageMixIn(object):
-    """
-        Store a message between requests which the user needs to see.
+class RequestHandler(tornado.web.RequestHandler):
+    def data_received(self, chunk):
+        pass
 
-        views
-        -------
+    def initialize(self):
+        db = self.session['db'] if 'db' in self.session else 0
+        self.redis = self.application.redis[db]
 
-        self.flash("Welcome back, %s" % username, 'success')
-
-        base.html
-        ------------
-        
-        {% set messages = handler.get_flashed_messages() %}
-        {% if messages %}
-        <div id="flashed">
-            {% for category, msg in messages %}
-            <span class="flash-{{ category }}">{{ msg }}</span>
-            {% end %}
-        </div>
-        {% end %}
-    """
-
-    def flash(self, message, category='message'):
-        messages = self.messages()
-        messages.append((category, message))
-        self.set_secure_cookie('flash_messages', tornado.escape.json_encode(messages))
-
-    def messages(self):
-        messages = self.get_secure_cookie('flash_messages')
-        messages = tornado.escape.json_decode(messages) if messages else []
-        return messages
-
-    def get_flashed_messages(self):
-        messages = self.messages()
-        self.clear_cookie('flash_messages')
-        return messages
-
-
-class PermissionMixIn(object):
     @property
     def identity(self):
         if not hasattr(self, "_identity"):
@@ -73,34 +39,6 @@ class PermissionMixIn(object):
             identity.provides.update(self.current_user.provides)
             return identity
         return AnonymousIdentity()
-
-
-class CachedItemsMixIn(object):
-    def get_cached_items(self, name):
-        items = cache.get(name)
-        if items is None:
-            items = self.set_cached_items(name)
-        return items
-
-    def set_cached_items(self, name, limit=10):
-        items = []
-        if name == 'latest_comments':
-            items = [comment.item for comment in Comment.query.order_by(Comment.created_date.desc()).limit(limit)]
-        elif name == 'tags':
-            items = Tag.query.cloud()
-        elif name == 'links':
-            items = [link.item for link in Link.query.filter(Link.passed == True).limit(limit)]
-        cache.set(name, items)
-        return items
-
-
-class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMixIn, CachedItemsMixIn):
-    def data_received(self, chunk):
-        pass
-
-    def initialize(self):
-        db = self.session['db'] if 'db' in self.session else 0
-        self.redis = self.application.redis[db]
 
     def get_current_user(self):
         user = self.session['user'] if 'user' in self.session else None
@@ -177,10 +115,13 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
 
     @property
     def is_xhr(self):
-        '''True if the request was triggered via a JavaScript XMLHttpRequest.
+        """
+        True if the request was triggered via a JavaScript XMLHttpRequest.
         This only works with libraries that support the `X-Requested-With`
         header and set it to "XMLHttpRequest".  Libraries that do that are
-        prototype, jQuery and Mochikit and probably some more.'''
+        prototype, jQuery and Mochikit and probably some more.
+        """
+
         return self.request.headers.get('X-Requested-With', '') \
                    .lower() == 'xmlhttprequest'
 
@@ -190,6 +131,42 @@ class RequestHandler(tornado.web.RequestHandler, PermissionMixIn, FlashMessageMi
 
     def _(self, message, plural_message=None, count=None):
         return self.locale.translate(message, plural_message, count)
+
+    def flash(self, message, category='message'):
+        """
+        Store a message between requests which the user needs to see.
+
+        views
+        -------
+
+        self.flash("Welcome back, %s" % username, 'success')
+
+        base.html
+        ------------
+
+        {% set messages = handler.get_flashed_messages() %}
+        {% if messages %}
+        <div id="flashed">
+            {% for category, msg in messages %}
+            <span class="flash-{{ category }}">{{ msg }}</span>
+            {% end %}
+        </div>
+        {% end %}
+        """
+
+        messages = self.messages()
+        messages.append((category, message))
+        self.set_secure_cookie('flash_messages', tornado.escape.json_encode(messages))
+
+    def messages(self):
+        messages = self.get_secure_cookie('flash_messages')
+        messages = tornado.escape.json_decode(messages) if messages else []
+        return messages
+
+    def get_flashed_messages(self):
+        messages = self.messages()
+        self.clear_cookie('flash_messages')
+        return messages
 
 
 class ErrorHandler(RequestHandler):
