@@ -20,10 +20,8 @@ from redisadmin.extensions.sessions import RedisSessionStore
 class Application(tornado.web.Application):
     def __init__(self):
 
-        if 'default_locale' in settings:
-            path = os.path.join(os.path.dirname(__file__), 'translations')
-            tornado.locale.load_translations(path)
-
+        path = os.path.join(os.path.dirname(__file__), 'translations')
+        tornado.locale.load_translations(path)
         tornado.web.Application.__init__(self, url_patterns, **settings)
 
         self.forms = create_forms()
