@@ -248,7 +248,7 @@ class FlushDB(RequestHandler):
 
 
 @route("/flush/all", name="flush_all")
-class FlushDB(RequestHandler):
+class FlushAll(RequestHandler):
     @tornado.web.authenticated
     def get(self):
         result = self.redis.flushall()
