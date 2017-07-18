@@ -10,7 +10,6 @@ import redis
 import tornado.web
 import tornado.locale
 
-from redisadmin import uimodules
 from redisadmin.settings import settings
 from redisadmin.urls import url_patterns
 from redisadmin.forms import create_forms
@@ -20,11 +19,6 @@ from redisadmin.extensions.sessions import RedisSessionStore
 
 class Application(tornado.web.Application):
     def __init__(self):
-
-        settings.update(dict(
-            ui_modules=uimodules,
-            autoescape=None
-        ))
 
         if 'default_locale' in settings:
             path = os.path.join(os.path.dirname(__file__), 'translations')

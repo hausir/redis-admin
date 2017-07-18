@@ -29,4 +29,5 @@ settings = {
     'permanent_session_lifetime': 1,
 
     'per_page': 100,
+    'autoescape': None,
 }
