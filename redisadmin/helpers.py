@@ -1,48 +1,9 @@
-#!/usr/bin/env python
-# coding=utf-8
-"""
-    helpers.py
-    ~~~~~~~~~~~~~
-    :author: laoqiu.com@gmail.com
-"""
+# -*- coding: utf-8 -*-
 
-
-class Storage(dict):
-    """
-    A Storage object is like a dictionary except `obj.foo` can be used
-    in addition to `obj['foo']`.
-    >>> o = storage(a=1)
-    >>> o.a
-    1
-    >>> o['a']
-    1
-    >>> o.a = 2
-    >>> o['a']
-    2
-    >>> del o.a
-    >>> o.a
-    Traceback (most recent call last):
-    ...
-    AttributeError: 'a'
-    """
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError as k:
-            raise AttributeError(k)
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __delattr__(self, key):
-        try:
-            del self[key]
-        except KeyError as k:
-            raise AttributeError(k)
-
-    def __repr__(self):
-        return '<Storage ' + dict.__repr__(self) + '>'
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 
 def setting_from_object(obj):
@@ -82,6 +43,3 @@ class Pagination(object):
     has_next = property(lambda x: x.page < x.pages)
     next_num = property(lambda x: x.page + 1)
     pages = property(lambda x: max(0, x.total - 1) // x.per_page + 1)
-
-
-storage = Storage
