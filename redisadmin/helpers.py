@@ -6,14 +6,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 
-def setting_from_object(obj):
-    settings = dict()
-    for key in dir(obj):
-        if key.isupper():
-            settings[key.lower()] = getattr(obj, key)
-    return settings
-
-
 class Pagination(object):
     def __init__(self, query, page, per_page):
         self.query = query

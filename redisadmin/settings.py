@@ -7,24 +7,26 @@ from __future__ import unicode_literals
 
 import os
 
-DEBUG = True
-COOKIE_SECRET = 'simple'
-LOGIN_URL = '/login'
-XSRF_COOKIES = True
+settings = {
+    'debug': True,
+    'cookie_secret': 'simple',
+    'login_url': '/login',
+    'xsrf_cookies': True,
 
-USERNAME = 'admin'
-PASSWORD = '111'
+    'username': 'admin',
+    'password': '111',
 
-TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates')
-STATIC_PATH = os.path.join(os.path.dirname(__file__), 'static')
+    'template_path': os.path.join(os.path.dirname(__file__), 'templates'),
+    'static_path': os.path.join(os.path.dirname(__file__), 'static'),
 
-DEFAULT_LOCALE = 'zh_CN'
+    'default_locale': 'zh_CN',
 
-REDIS_SERVER = True
-REDIS_DB = 16
+    'redis_server': True,
+    'redis_db': 16,
 
-# If set to None or 0 the session will be deleted when the user closes the browser.
-# If set number the session lives for value days.
-PERMANENT_SESSION_LIFETIME = 1
+    # If set to None or 0 the session will be deleted when the user closes the browser.
+    # If set number the session lives for value days.
+    'permanent_session_lifetime': 1,
 
-PER_PAGE = 100
+    'per_page': 100,
+}
