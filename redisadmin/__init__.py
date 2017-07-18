@@ -12,20 +12,14 @@ import tornado.locale
 
 from redisadmin import uimodules
 from redisadmin.settings import settings
+from redisadmin.urls import url_patterns
 from redisadmin.forms import create_forms
 from redisadmin.views import ErrorHandler, frontend
-from redisadmin.extensions.routing import Route
 from redisadmin.extensions.sessions import RedisSessionStore
 
 
 class Application(tornado.web.Application):
     def __init__(self):
-        handlers = [
-                       # other handlers...
-                   ] + Route.routes()
-
-        # Custom 404 ErrorHandler
-        handlers.append((r"/(.*)", ErrorHandler))
 
         settings.update(dict(
             ui_modules=uimodules,
@@ -36,7 +30,7 @@ class Application(tornado.web.Application):
             path = os.path.join(os.path.dirname(__file__), 'translations')
             tornado.locale.load_translations(path)
 
-        tornado.web.Application.__init__(self, handlers, **settings)
+        tornado.web.Application.__init__(self, url_patterns, **settings)
 
         self.forms = create_forms()
         self.redis = [redis.StrictRedis(db=n, decode_responses=True) for n in range(self.settings['redis_db'])]

@@ -12,10 +12,8 @@ import tornado.web
 
 from redisadmin.views import RequestHandler
 from redisadmin.helpers import Pagination
-from redisadmin.extensions.routing import route
 
 
-@route("/", name='index')
 class Index(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -24,7 +22,6 @@ class Index(RequestHandler):
         return
 
 
-@route("/connection", name='connection')
 class Connection(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -37,7 +34,6 @@ class Connection(RequestHandler):
         return
 
 
-@route("/menu", name='menu')
 class Menu(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -78,7 +74,6 @@ class Menu(RequestHandler):
         return
 
 
-@route("/new", name='new')
 class New(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -156,7 +151,6 @@ class New(RequestHandler):
         return
 
 
-@route("/value", name='value')
 class Value(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -198,7 +192,6 @@ class Value(RequestHandler):
         return list(self.redis.zrange(key, 0, -1))
 
 
-@route("/list", name='list')
 class List(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -229,7 +222,6 @@ class List(RequestHandler):
         return
 
 
-@route("/info", name="info")
 class Info(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -238,7 +230,6 @@ class Info(RequestHandler):
         return
 
 
-@route("/flush/db", name="flush_db")
 class FlushDB(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -247,7 +238,6 @@ class FlushDB(RequestHandler):
         return
 
 
-@route("/flush/all", name="flush_all")
 class FlushAll(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -256,7 +246,6 @@ class FlushAll(RequestHandler):
         return
 
 
-@route("/expire", name="expire")
 class Expire(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -273,7 +262,6 @@ class Expire(RequestHandler):
         return
 
 
-@route("/move", name="move")
 class Move(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -294,7 +282,6 @@ class Move(RequestHandler):
         return
 
 
-@route("/edit", name="edit")
 class Edit(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -354,7 +341,6 @@ class Edit(RequestHandler):
         return self.redis.zadd(key, score, value)
 
 
-@route("/add", name="add")
 class Add(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -415,7 +401,6 @@ class Add(RequestHandler):
         return self.redis.zadd(key, score, member)
 
 
-@route("/remove", name="remove")
 class Remove(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -446,7 +431,6 @@ class Remove(RequestHandler):
         return
 
 
-@route("/pop", name="pop")
 class Pop(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -476,7 +460,6 @@ class Pop(RequestHandler):
         return
 
 
-@route("/delete", name="delete")
 class Delete(RequestHandler):
     @tornado.web.authenticated
     def get(self):
@@ -491,7 +474,6 @@ class Delete(RequestHandler):
         return
 
 
-@route("/login", name='login')
 class Login(RequestHandler):
     def get(self):
         self.title = self._("Login")
@@ -515,7 +497,6 @@ class Login(RequestHandler):
         self.render('login.html', form=form)
 
 
-@route("/logout", name='logout')
 class Logout(RequestHandler):
     def get(self):
         del self.session['user']
