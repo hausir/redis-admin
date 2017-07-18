@@ -15,6 +15,7 @@ import tornado.ioloop
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters.html import HtmlFormatter
+from redisadmin.forms import create_forms
 from redisadmin.extensions.permission import Identity, AnonymousIdentity
 from redisadmin.extensions.sessions import RedisSession, Session
 
@@ -129,7 +130,7 @@ class RequestHandler(tornado.web.RequestHandler):
 
     @property
     def forms(self):
-        return self.application.forms[self.locale.code]
+        return create_forms(self.get_user_locale().code)
 
     def _(self, message, plural_message=None, count=None):
         return self.locale.translate(message, plural_message, count)
