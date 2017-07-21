@@ -1,129 +1,40 @@
-#!/usr/bin/env python
-# coding=utf-8
-"""
-    extensions.session
-    ~~~~~~~~
-    :origin version in https://gist.github.com/1735032
-"""
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import json
-import time
-import logging
+import redis
+
 from uuid import uuid4
-
-
-class Session(object):
-    def __init__(self, get_secure_cookie, set_secure_cookie, name='_session', expires_days=None):
-        self.set_session = set_secure_cookie
-        self.get_session = get_secure_cookie
-        self.name = name
-        self._expiry = expires_days
-        self._dirty = False
-        self.get_data()
-
-    def get_data(self):
-        value = self.get_session(self.name)
-        self._data = json.loads(value) if value else {}
-
-    def set_expires(self, days):
-        self._expiry = days
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __setitem__(self, key, value):
-        self._data[key] = value
-        self._dirty = True
-
-    def __delitem__(self, key):
-        if key in self._data:
-            del self._data[key]
-            self._dirty = True
-
-    def __contains__(self, key):
-        return key in self._data
-
-    def __len__(self):
-        return len(self._data)
-
-    def __iter__(self):
-        for key in self._data:
-            yield key
-
-    def __del__(self):
-        self.save()
-
-    def save(self):
-        if self._dirty:
-            self.set_session(self.name, json.dumps(self._data), expires_days=self._expiry)
-            self._dirty = False
-
-
-class RedisSessionStore(object):
-    def __init__(self, redis_connection, **options):
-        self.options = {
-            'key_prefix': 'session',
-            'expire': 7200,
-        }
-        self.options.update(options)
-        self.redis = redis_connection
-
-    def prefixed(self, sid):
-        return '%s:%s' % (self.options['key_prefix'], sid)
-
-    def generate_sid(self):
-        return uuid4().hex
-
-    def get_session(self, sid, name):
-        data = self.redis.hget(self.prefixed(sid), name)
-        session = json.loads(data) if data else dict()
-        return session
-
-    def set_session(self, sid, session_data, name, expiry=None):
-        self.redis.hset(self.prefixed(sid), name, json.dumps(session_data))
-        expiry = expiry or self.options['expire']
-        if expiry:
-            self.redis.expire(self.prefixed(sid), expiry)
-
-    def delete_session(self, sid):
-        self.redis.delete(self.prefixed(sid))
+from redisadmin.settings import settings
 
 
 class RedisSession(object):
-    def __init__(self, session_store, session_id=None, expires_days=None):
-        self._store = session_store
-        self._sid = session_id if session_id else self._store.generate_sid()
+    def __init__(self, session_id=None, expires=None):
+        self.redis = redis.StrictRedis(
+            host=settings.get('redis_host'),
+            port=settings.get('redis_port'),
+            password=settings.get('redis_password'),
+            db=0, decode_responses=True
+        )
+        self._sid = session_id if session_id else uuid4().hex
+        self._key = 'session:{}'.format(self._sid)
+        self._data = self.get_session('data')
+        self._expires = expires
         self._dirty = False
-        self.set_expires(expires_days)
-        try:
-            self._data = self._store.get_session(self._sid, 'data')
-        except:
-            logging.error('Can not connect Redis server.')
-            self._data = {}
 
     def clear(self):
-        self._store.delete_session(self._sid)
+        self.redis.delete(self._key)
 
     @property
     def id(self):
         return self._sid
 
-    def access(self, remote_ip):
-        access_info = {'remote_ip': remote_ip, 'time': '%.6f' % time.time()}
-        self._store.set_session(
-            self._sid,
-            'last_access',
-            json.dumps(access_info))
-
-    def last_access(self):
-        access_info = self._store.get_session(self._sid, 'last_access')
-        return json.loads(access_info)
-
-    def set_expires(self, days):
-        self._expiry = days * 86400 if days else None
-
     def __getitem__(self, key):
-        return self._data[key]
+        return self._data.get(key)
 
     def __setitem__(self, key, value):
         self._data[key] = value
@@ -151,5 +62,16 @@ class RedisSession(object):
 
     def save(self):
         if self._dirty:
-            self._store.set_session(self._sid, self._data, 'data', self._expiry)
+            self.set_session(self._data, 'data', self._expires)
             self._dirty = False
+
+    def get_session(self, name):
+        data = self.redis.hget(self._key, name)
+        session = json.loads(data) if data else dict()
+        return session
+
+    def set_session(self, session_data, name, expiry=None):
+        self.redis.hset(self._key, name, json.dumps(session_data))
+        expiry = expiry or self.options['expire']
+        if expiry:
+            self.redis.expire(self._key, expiry)

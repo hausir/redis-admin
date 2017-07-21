@@ -21,12 +21,13 @@ settings = {
 
     'default_locale': 'zh_CN',
 
-    'redis_server': True,
+    'redis_host': 'localhost',
+    'redis_port': 6379,
+    'redis_password': None,
     'redis_db': 16,
 
-    # If set to None or 0 the session will be deleted when the user closes the browser.
-    # If set number the session lives for value days.
-    'permanent_session_lifetime': 1,
+    'session_db': 0,
+    'session_expires': 86400,
 
     'per_page': 100,
     'autoescape': None,

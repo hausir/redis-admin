@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
+import redis
 import logging
 import tornado.web
 import tornado.locale
@@ -16,8 +17,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters.html import HtmlFormatter
 from redisadmin.forms import create_forms
-from redisadmin.extensions.permission import Identity, AnonymousIdentity
-from redisadmin.extensions.sessions import RedisSession, Session
+from redisadmin.extensions.sessions import RedisSession
 
 
 class RequestHandler(tornado.web.RequestHandler):
@@ -28,43 +28,28 @@ class RequestHandler(tornado.web.RequestHandler):
 
     def initialize(self):
         db = self.session['db'] if 'db' in self.session else 0
-        self.redis = self.application.redis[db]
-
-    @property
-    def identity(self):
-        if not hasattr(self, "_identity"):
-            self._identity = self.get_identity()
-        return self._identity
-
-    def get_identity(self):
-        if self.current_user:
-            identity = Identity(self.current_user.id)
-            identity.provides.update(self.current_user.provides)
-            return identity
-        return AnonymousIdentity()
+        self.redis = redis.StrictRedis(
+            host=self.settings.get('redis_host'),
+            port=self.settings.get('redis_port'),
+            password=self.settings.get('redis_password'),
+            db=db, decode_responses=True
+        )
 
     def get_current_user(self):
-        user = self.session['user'] if 'user' in self.session else None
-        return user
+        return self.session['user']
 
     @property
     def session(self):
-        if hasattr(self, '_session'):
-            return self._session
-        else:
-            self.require_setting('permanent_session_lifetime', 'session')
-            expires = self.settings['permanent_session_lifetime'] or None
+        if not hasattr(self, '_session'):
+            expires = self.settings.get('session_expires')
+            sessionid = self.get_secure_cookie('sid')
+            if isinstance(sessionid, bytes):
+                sessionid = sessionid.decode()
+            self._session = RedisSession(sessionid, expires=expires)
+            if not sessionid:
+                self.set_secure_cookie('sid', self._session.id, expires_days=expires)
 
-            if 'redis_server' in self.settings and self.settings['redis_server']:
-                sessionid = self.get_secure_cookie('sid')
-                if isinstance(sessionid, bytes):
-                    sessionid = sessionid.decode()
-                self._session = RedisSession(self.application.session_store, sessionid, expires_days=expires)
-                if not sessionid:
-                    self.set_secure_cookie('sid', self._session.id, expires_days=expires)
-            else:
-                self._session = Session(self.get_secure_cookie, self.set_secure_cookie, expires_days=expires)
-            return self._session
+        return self._session
 
     def get_user_locale(self):
         code = self.get_cookie('lang', self.settings.get('default_locale', 'zh_CN'))
