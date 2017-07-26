@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 
 import os
 
+from redisadmin.extensions.jinja2 import loader
+
 settings = {
     'debug': True,
     'cookie_secret': 'simple',
@@ -31,4 +33,6 @@ settings = {
 
     'per_page': 100,
     'autoescape': None,
+
+    'template_loader': loader,
 }

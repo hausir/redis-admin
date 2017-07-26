@@ -1,7 +1,9 @@
+Jinja2==2.9.6
 Pygments==2.2.0
 redis==2.10.5
 six==1.10.0
 tornado==4.5.1
+tornado-jinja2==0.2.4
 WTForms==2.1
 wtforms-tornado==0.0.2
 

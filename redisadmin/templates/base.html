@@ -5,31 +5,31 @@
     <title>{{ handler.title }} - Redis Admin</title>
     <link href="{{ static_url('images/favicon.png') }}" rel='shortcut icon' />
     <link rel="stylesheet" href="{{ static_url('styles/base.css') }}" />
-    {% block css %}{% end %}
+    {% block css %}{% endblock %}
 </head>
 <body>
 <div id="header">
     <img src="{{ static_url('images/redis.png') }}" alt="Redis Admin">
     <div id="nav">
-        {% block nav %}{% end %}
+        {% block nav %}{% endblock %}
     </div>
     <div class="account">
         {% if current_user %}
-        <a href="{{ reverse_url('logout') }}">{{ _("Logout") }}</a>
+            <a href="{{ reverse_url('logout') }}">{{ _("Logout") }}</a>
         {% else %}
-        <p>{{ _("Please login") }}</p>
-        {% end %}
+            <p>{{ _("Please login") }}</p>
+        {% endif %}
     </div>
 </div>
 <div id="container">
     {% block container %}
         <div class="sidebar">
-            {% block sidebar %}{% end %}
+            {% block sidebar %}{% endblock %}
         </div>
         <div class="content">
-            {% block content %}{% end %}
+            {% block content %}{% endblock %}
         </div>
-    {% end %}
+    {% endblock %}
 </div>
 <div id="footer">
     <div class="inner">
@@ -49,6 +49,6 @@
         $(this).hide();
     });
 </script>
-{% block js %}{% end %}
+{% block js %}{% endblock %}
 </body>
 </html>
