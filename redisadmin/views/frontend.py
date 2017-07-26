@@ -1,15 +1,15 @@
-#!/usr/bin/env python
-# coding=utf-8
-"""
-    views: frontend.py
-    ~~~~~~~~~~~
-    :author: laoqiu.com@gmail.com
-"""
-# import redis
-import logging
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import json
+import logging
 import tornado.web
 
+from redis.exceptions import RedisError
 from redisadmin.views import RequestHandler
 from redisadmin.helpers import Pagination
 
@@ -93,7 +93,7 @@ class New(RequestHandler):
             elif _type == 'hash':
                 try:
                     value = json.loads(value)
-                except:
+                except ValueError:
                     self.error()
                     return
                 else:
@@ -107,7 +107,7 @@ class New(RequestHandler):
             elif _type == 'list':
                 try:
                     value = json.loads(value)
-                except:
+                except ValueError:
                     self.error()
                     return
                 else:
@@ -121,7 +121,7 @@ class New(RequestHandler):
             elif _type == 'set':
                 try:
                     value = json.loads(value)
-                except:
+                except ValueError:
                     self.error()
                     return
                 else:
@@ -198,18 +198,19 @@ class List(RequestHandler):
         root = self.get_args('root', '')
         if root:
 
-            while (root and root[-1] in [':', '*']):
+            while root and root[-1] in [':', '*']:
                 root = root[:-1]
 
             page = self.get_args('page', 1, _type=int)
-            if page < 1: page = 1
+            if page < 1:
+                page = 1
 
             per_page = self.settings['per_page']
 
             fullkeys = sorted(self.redis.keys(root + ':*'))
 
-            data = [(key, self.redis.hgetall(key) if self.redis.type(key) == 'hash' else {}) \
-                    for key in fullkeys if key.split(root)[-1].count(':') == 1]
+            data = [(key, self.redis.hgetall(key) if self.redis.type(key) == 'hash' else {}) for key in fullkeys if
+                    key.split(root)[-1].count(':') == 1]
 
             page_obj = Pagination(data, page, per_page=per_page)
 
@@ -272,7 +273,7 @@ class Move(RequestHandler):
         if key and db >= 0:
             try:
                 result = self.redis.move(key, db)
-            except:
+            except RedisError:
                 result = False
 
             self.write(dict(success=result))
