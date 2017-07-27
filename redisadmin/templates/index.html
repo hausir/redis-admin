@@ -75,7 +75,7 @@
 {% block sidebar %}
     <div id="search">
         <form action="/" method="post">
-            <input name="q" type="text" class="text" value="{{ handler.get_args('q','') or '*' }}" />
+            <input title="keyword" name="q" type="text" class="text" value="{{ handler.get_args('q','') or '*' }}" />
         </form>
     </div>
     <div id="menu"></div>
@@ -89,6 +89,10 @@
     <script type="text/javascript" src="{{ static_url('js/jquery.treeview.js') }}"></script>
     <script src="{{ static_url('js/index.js') }}"></script>
     <script>
+        var dataBox = $('#data-box');
+        var dataTable = dataBox.find('table');
+        var dataBody = dataTable.find('tbody');
+
         function flushAll() {
             var r = confirm("Are you sure remove all keys from all databases?");
             if (r) {
@@ -115,14 +119,14 @@
             var r = confirm("Are you sure delete this key?");
             if (r) {
                 $.getJSON("{{ reverse_url('delete') }}", {'key': key}, function (data) {
-                        if (data.success) {
-                            var html = '<tr><th>This key is deleted.</th></tr>';
-                        } else {
-                            var html = '<tr><th>This key delete failed.</th></tr>';
-                        }
-                        $('#data-box table tbody').html(html);
+                    var html = '';
+                    if (data.success) {
+                        html = '<tr><th>This key is deleted.</th></tr>';
+                    } else {
+                        html = '<tr><th>This key delete failed.</th></tr>';
                     }
-                )
+                    dataBody.html(html);
+                })
             }
         }
 
@@ -130,14 +134,14 @@
             var db = prompt("Move a key to which database?", "1");
             if (db !== null && db !== '') {
                 $.getJSON("{{ reverse_url('move') }}", {'key': key, 'db': db}, function (data) {
-                        if (data.success) {
-                            var html = '<tr><th>This key is removed.</th></tr>';
-                        } else {
-                            var html = '<tr><th>This key remove failed.</th></tr>';
-                        }
-                        $('#data-box table tbody').html(html);
+                    var html = '';
+                    if (data.success) {
+                        html = '<tr><th>This key is removed.</th></tr>';
+                    } else {
+                        html = '<tr><th>This key remove failed.</th></tr>';
                     }
-                )
+                    dataBody.html(html);
+                })
             }
         }
 
@@ -145,20 +149,20 @@
             var seconds = prompt("Set number of this key's time to live in seconds?", "3600");
             if (seconds !== null && seconds !== '') {
                 $.getJSON("{{ reverse_url('expire') }}", {'key': key, 'seconds': seconds}, function (data) {
-                        if (data.success) {
-                            var message = '<p>This key is expired.<p>';
-                        } else {
-                            var message = '<p>This key expire failed.<p>';
-                        }
-                        $('#data-box table').before(message);
+                    var message = '';
+                    if (data.success) {
+                        message = '<p>This key is expired.<p>';
+                    } else {
+                        message = '<p>This key expire failed.<p>';
                     }
-                )
+                    dataTable.before(message);
+                })
             }
         }
 
         function getInfo() {
             $.getJSON("{{ reverse_url('info') }}", function (data) {
-                    if (data !== null & data !== '') {
+                    if (data !== null && data !== '') {
                         var html = ' \
                     <h2>Redis Server Info</h2> \
                     <div class="options"> \
@@ -172,7 +176,7 @@
                             html += "<tr><th>" + d[0] + "</th><td>" + d[1] + "</td></tr>";
                         });
                         html += '</table>';
-                        $('#data-box').html(html);
+                        dataBox.html(html);
                     } else {
                         alert('server error!');
                     }
@@ -182,16 +186,16 @@
 
         function getMenu(q) {
             $.getJSON("{{ reverse_url('menu') }}", {'q': q}, function (data) {
-                    html = createMenuNode(data);
-                    $('#menu').html(html);
-                    initTree();
-                }
-            )
+                var html = createMenuNode(data);
+                $('#menu').html(html);
+                initTree();
+            })
         }
 
         function getValue(key) {
             $.getJSON("{{ reverse_url('value') }}", {'key': key}, function (data) {
                     var special_options = '';
+                    var html = '';
                     switch (data.type) {
                         case 'string':
                             break;
@@ -222,7 +226,7 @@
                             break;
                     }
                     if (data.value !== null) {
-                        var html = ' \
+                        html = ' \
                     <h2>[' + data.type + ']' + data.key + '</h2> \
                     <div class="options"> \
                         <ul> \
@@ -235,7 +239,7 @@
                     <div class="tips">Please double click item to edit it, and ctrl+enter to submit. </div> \
                     <table class="view" data-key="' + data.key + '" data-type="' + data.type + '">';
 
-                        if (data.value === '' | typeof(data.value) === 'string') {
+                        if (data.value === '' || typeof(data.value) === 'string') {
                             html += '<tr><th>Value</th></tr> \
                         <tr><td>' + data.value + '</td></tr>';
                         } else {
@@ -249,9 +253,9 @@
                         }
                         html += '</table>';
                     } else {
-                        var html = '<h2>This key is not found.</h2>';
+                        html = '<h2>This key is not found.</h2>';
                     }
-                    $('#data-box').html(html);
+                    dataBox.html(html);
                 }
             )
         }
@@ -295,9 +299,9 @@
                             <th><a class="key" href="javascript:;">' + item[0] + '</a></th>' + $tds.html() + ' \
                         </tr>');
                     });
-                    if (json.iter_pages !== '') {
+                    if (json['iter_pages'] !== '') {
                         var page_html = '';
-                        $.each(json.iter_pages, function (i, p) {
+                        $.each(json['iter_pages'], function (i, p) {
                             if (p) {
                                 if (json.page === p) {
                                     page_html += '<span class="current">' + p + '</span>';
@@ -317,7 +321,7 @@
                     </tr>');
                 }
                 $box.find('table').html('<thead>' + $thead.html() + '</thead><tbody>' + $tbody.html() + '</tbody>');
-                $('#data-box').html($box.html());
+                dataBox.html($box.html());
             })
         }
 
@@ -380,14 +384,14 @@
             })
         }
 
-        $('#new-box form').submit(function () {
+        $('#new-box').find('form').submit(function () {
             var $this = $(this);
             var key = $(this).find('input[name=key]').val();
             var data = $(this).serialize();
             $.getJSON("{{ reverse_url('new') }}", data, function (data) {
                 if (data.success) {
                     getValue(key);
-                    $('#nav a.new').click();
+                    $('#nav').find('a.new').click();
                     $this.find('input:text, textarea').val('');
                 } else {
                     alert(data.error);
